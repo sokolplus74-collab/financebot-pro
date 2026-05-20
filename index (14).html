@@ -1,0 +1,1760 @@
+<!DOCTYPE html>
+<html lang="no" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinanceBot Pro</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root[data-theme="dark"] {
+      --bg: #07080a; --card-bg: #111318; --card-bg2: #181c23;
+      --accent: #3b82f6; --accent2: #8b5cf6;
+      --text: #f0f4ff; --text-dim: #6b7a99; --text-mid: #94a3b8;
+      --success: #22c55e; --danger: #ef4444;
+      --border: rgba(255,255,255,0.06); --input-bg: #181c23; --shadow: rgba(0,0,0,0.4);
+    }
+    :root[data-theme="light"] {
+      --bg: #f0f4fa; --card-bg: #ffffff; --card-bg2: #f7f9fc;
+      --accent: #2563eb; --accent2: #7c3aed;
+      --text: #0f172a; --text-dim: #94a3b8; --text-mid: #475569;
+      --success: #16a34a; --danger: #dc2626;
+      --border: rgba(0,0,0,0.08); --input-bg: #f0f4fa; --shadow: rgba(0,0,0,0.08);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; font-family:'Syne',sans-serif; }
+    body { background:var(--bg); color:var(--text); height:100vh; overflow:hidden; transition:background 0.3s,color 0.3s; }
+
+    /* ========== LANDING PAGE ========== */
+    #landing {
+      position:fixed; inset:0; z-index:100;
+      background: radial-gradient(ellipse at 30% 20%, rgba(59,130,246,0.15) 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 80%, rgba(139,92,246,0.12) 0%, transparent 55%),
+                  var(--bg);
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0;
+    }
+    .landing-badge {
+      display:inline-flex; align-items:center; gap:8px;
+      background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.25);
+      border-radius:20px; padding:6px 16px; font-size:12px; font-weight:600;
+      color:var(--accent); letter-spacing:1px; text-transform:uppercase; margin-bottom:32px;
+    }
+    .landing-dot { width:6px; height:6px; background:var(--success); border-radius:50%; animation:pulse-dot 2s infinite; }
+    @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .landing-title { font-size:clamp(48px,8vw,88px); font-weight:800; line-height:1; text-align:center; letter-spacing:-2px; margin-bottom:16px; }
+    .landing-title .grad {
+      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #3b82f6 100%);
+      background-size:200% auto; -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      animation: shimmer 3s linear infinite;
+    }
+    @keyframes shimmer { 0%{background-position:0%} 100%{background-position:200%} }
+    .landing-sub { font-size:18px; color:var(--text-mid); text-align:center; max-width:480px; line-height:1.6; margin-bottom:32px; }
+    .landing-features { display:flex; gap:24px; margin-bottom:32px; flex-wrap:wrap; justify-content:center; }
+    .feat-pill { display:flex; align-items:center; gap:8px; background:var(--card-bg); border:1px solid var(--border); border-radius:12px; padding:10px 18px; font-size:13px; font-weight:600; color:var(--text-mid); }
+
+    /* API KEY INPUT on landing */
+    .api-key-block {
+      width:100%; max-width:420px; margin-bottom:24px;
+    }
+    .api-key-label { font-size:11px; font-weight:700; color:var(--text-dim); letter-spacing:0.5px; text-transform:uppercase; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+    .api-key-row { display:flex; gap:8px; }
+    .api-key-input {
+      flex:1; background:var(--card-bg); border:1px solid var(--border); border-radius:12px;
+      padding:12px 16px; color:var(--text); font-size:13px; outline:none; font-family:'DM Mono',monospace;
+      transition:border-color 0.2s;
+    }
+    .api-key-input:focus { border-color:var(--accent); }
+    .api-key-input::placeholder { color:var(--text-dim); font-size:12px; }
+    .api-save-btn {
+      padding:12px 18px; background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.3);
+      border-radius:12px; color:var(--accent); font-size:12px; font-weight:700; cursor:pointer;
+      font-family:inherit; transition:0.2s; white-space:nowrap;
+    }
+    .api-save-btn:hover { background:rgba(59,130,246,0.25); }
+    .api-status { font-size:11px; margin-top:6px; color:var(--text-dim); }
+    .api-status.ok { color:var(--success); }
+    .api-status.err { color:var(--danger); }
+
+    .enter-btn {
+      padding:18px 48px; font-size:16px; font-weight:700;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      color:#fff; border:none; border-radius:16px; cursor:pointer;
+      font-family:inherit; letter-spacing:0.5px;
+      box-shadow: 0 0 40px rgba(59,130,246,0.3); transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .enter-btn:hover { transform:translateY(-2px); box-shadow:0 0 60px rgba(59,130,246,0.5); }
+    .landing-lang { display:flex; gap:10px; margin-top:24px; }
+    .ll-btn { background:var(--card-bg); border:1px solid var(--border); color:var(--text-dim); padding:8px 20px; border-radius:10px; cursor:pointer; font-size:13px; font-weight:700; font-family:inherit; transition:0.2s; }
+    .ll-btn.active { background:rgba(59,130,246,0.1); border-color:var(--accent); color:var(--accent); }
+
+    /* ========== APP ========== */
+    #app { display:none; height:100vh; overflow:hidden; }
+    #app.show { display:flex; flex-direction:row; }
+
+    /* SIDEBAR */
+    .sidebar { width:200px; background:var(--card-bg); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:20px 14px; flex-shrink:0; }
+    .logo { font-size:18px; font-weight:800; color:var(--accent); margin-bottom:32px; display:flex; align-items:center; gap:8px; letter-spacing:-0.5px; }
+    .nav-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; color:var(--text-dim); font-size:13px; font-weight:600; cursor:pointer; transition:0.2s; margin-bottom:2px; }
+    .nav-item:hover,.nav-item.active { background:rgba(59,130,246,0.08); color:var(--accent); }
+    .sidebar-bottom { margin-top:auto; display:flex; flex-direction:column; gap:10px; }
+
+    /* API key mini in sidebar */
+    .sidebar-api { padding:10px 12px; background:var(--card-bg2); border-radius:10px; border:1px solid var(--border); }
+    .sidebar-api-label { font-size:10px; font-weight:700; color:var(--text-dim); letter-spacing:0.5px; text-transform:uppercase; margin-bottom:6px; }
+    .sidebar-api-row { display:flex; gap:4px; }
+    .sidebar-api-input { flex:1; min-width:0; background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:6px 8px; color:var(--text); font-size:10px; outline:none; font-family:'DM Mono',monospace; }
+    .sidebar-api-input:focus { border-color:var(--accent); }
+    .sidebar-api-btn { background:var(--accent); border:none; border-radius:6px; color:#fff; font-size:10px; font-weight:700; cursor:pointer; padding:0 8px; font-family:inherit; }
+    .sidebar-api-dot { width:6px; height:6px; border-radius:50%; background:var(--text-dim); margin-top:6px; }
+    .sidebar-api-dot.ok { background:var(--success); }
+
+    .lang-selector { display:flex; gap:6px; }
+    .lang-btn { flex:1; background:var(--card-bg2); border:1px solid var(--border); color:var(--text-dim); padding:8px 4px; border-radius:8px; cursor:pointer; font-size:11px; font-weight:700; transition:0.2s; font-family:inherit; }
+    .lang-btn.active { background:rgba(59,130,246,0.1); border-color:var(--accent); color:var(--accent); }
+    .theme-toggle { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:var(--card-bg2); border-radius:10px; border:1px solid var(--border); cursor:pointer; font-size:12px; color:var(--text-mid); font-weight:600; }
+    .toggle-sw { width:34px; height:18px; background:var(--accent); border-radius:9px; position:relative; transition:background 0.2s; }
+    .toggle-sw::after { content:''; position:absolute; top:2px; left:2px; width:14px; height:14px; background:#fff; border-radius:50%; transition:transform 0.2s; }
+    [data-theme="light"] .toggle-sw::after { transform:translateX(16px); }
+
+    /* LAYOUT */
+    .main-layout { flex:1; display:grid; grid-template-columns:1fr 360px; gap:16px; padding:16px; height:100vh; overflow:hidden; min-width:0; }
+
+    /* CHAT */
+    .chat-section { background:var(--card-bg); border-radius:20px; display:flex; flex-direction:column; overflow:hidden; border:1px solid var(--border); position:relative; }
+    .header-bar { padding:16px 22px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
+    .status-badge { display:flex; align-items:center; gap:6px; background:rgba(34,197,94,0.08); padding:5px 12px; border-radius:20px; border:1px solid rgba(34,197,94,0.15); }
+    .status-dot { width:6px; height:6px; background:var(--success); border-radius:50%; animation:pulse-dot 2s infinite; }
+
+    .messages { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:12px; }
+    .message { max-width:82%; padding:12px 16px; border-radius:16px; font-size:14px; line-height:1.65; animation:fadeUp 0.3s ease; white-space:pre-wrap; word-break:break-word; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    .bot { background:var(--card-bg2); color:var(--text); align-self:flex-start; border-bottom-left-radius:4px; }
+    .user { background:var(--accent); color:#fff; align-self:flex-end; border-bottom-right-radius:4px; }
+    .typing-indicator { display:flex; gap:4px; padding:12px 16px; background:var(--card-bg2); border-radius:16px; border-bottom-left-radius:4px; align-self:flex-start; }
+    .typing-dot { width:6px; height:6px; background:var(--text-dim); border-radius:50%; animation:bounce 1.2s infinite; }
+    .typing-dot:nth-child(2){animation-delay:.2s} .typing-dot:nth-child(3){animation-delay:.4s}
+    @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+    /* doc action chips — shown after file upload */
+    .doc-actions { padding:6px 18px 6px; display:flex; gap:6px; flex-wrap:wrap; flex-shrink:0; }
+    .doc-chip {
+      background:rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.25); border-radius:20px;
+      padding:5px 12px; font-size:12px; color:var(--accent2); cursor:pointer; transition:0.2s;
+      font-family:inherit; white-space:nowrap; font-weight:600;
+    }
+    .doc-chip:hover { background:rgba(139,92,246,0.2); border-color:var(--accent2); }
+
+    .file-preview-msg { max-width:82%; align-self:flex-end; animation:fadeUp 0.3s ease; }
+    .file-chip { display:inline-flex; align-items:center; gap:8px; background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.3); border-radius:12px; padding:8px 14px; font-size:13px; color:var(--accent); font-weight:600; }
+    .img-preview { max-width:200px; border-radius:12px; margin-top:6px; display:block; }
+
+    .upload-bar { padding:8px 22px; border-top:1px solid var(--border); display:none; align-items:center; gap:8px; flex-wrap:wrap; flex-shrink:0; background:rgba(59,130,246,0.04); }
+    .upload-bar.active { display:flex; }
+    .upload-chip { display:flex; align-items:center; gap:6px; background:var(--card-bg2); border:1px solid var(--border); border-radius:8px; padding:5px 10px; font-size:12px; font-weight:600; color:var(--text-mid); }
+    .upload-chip .rm { background:none; border:none; color:var(--danger); cursor:pointer; font-size:14px; line-height:1; padding:0 2px; }
+
+    #quick-chips { padding:0 18px 8px; display:flex; gap:8px; flex-wrap:wrap; flex-shrink:0; }
+    .chip { background:var(--card-bg2); border:1px solid var(--border); border-radius:20px; padding:5px 13px; font-size:12px; color:var(--text-mid); cursor:pointer; transition:0.2s; font-family:inherit; white-space:nowrap; }
+    .chip:hover { border-color:var(--accent); color:var(--accent); background:rgba(59,130,246,0.07); }
+
+    .input-wrapper { padding:12px 18px; border-top:1px solid var(--border); display:flex; gap:8px; align-items:center; flex-shrink:0; }
+    .chat-input { flex:1; background:var(--input-bg); border:1px solid var(--border); border-radius:12px; padding:12px 16px; color:var(--text); font-size:14px; outline:none; transition:border-color 0.2s; font-family:inherit; }
+    .chat-input:focus { border-color:var(--accent); }
+    .chat-input::placeholder { color:var(--text-dim); }
+    .action-btn { width:44px; height:44px; border-radius:12px; border:1px solid var(--border); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; flex-shrink:0; }
+    #send { background:var(--accent); border-color:var(--accent); color:#fff; }
+    #send:hover { opacity:0.88; transform:scale(1.04); }
+    #mic { background:var(--card-bg2); color:var(--text-mid); }
+    #mic.recording { background:var(--danger); border-color:var(--danger); color:#fff; animation:pulse-rec 1.2s infinite; }
+    #mic.speaking { background:var(--success); border-color:var(--success); color:#fff; }
+    @keyframes pulse-rec { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.3)} 50%{box-shadow:0 0 0 8px rgba(239,68,68,0)} }
+    #uploadBtn { background:var(--card-bg2); color:var(--text-mid); }
+    #uploadBtn:hover { color:var(--accent); }
+    #exportBtn { background:var(--card-bg2); color:var(--text-mid); }
+    #exportBtn:hover { color:var(--accent); }
+    #voiceToggle { background:var(--card-bg2); color:var(--text-dim); font-size:10px; font-weight:700; font-family:inherit; }
+    #voiceToggle.on { background:rgba(34,197,94,0.1); border-color:var(--success); color:var(--success); }
+
+    /* WIDGETS */
+    .widgets-section { display:flex; flex-direction:column; gap:14px; overflow-y:auto; padding-right:2px; }
+    .widgets-section::-webkit-scrollbar { width:4px; }
+    .widgets-section::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+    .card { background:var(--card-bg); border-radius:18px; padding:18px; border:1px solid var(--border); transition:transform 0.25s; flex-shrink:0; }
+    .card:hover { transform:translateY(-2px); }
+    .card-title { font-size:12px; font-weight:700; color:var(--text-mid); margin-bottom:12px; letter-spacing:0.5px; text-transform:uppercase; display:flex; align-items:center; gap:8px; }
+    .crypto-row { display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--border); cursor:pointer; transition:0.2s; border-radius:6px; }
+    .crypto-row:last-child { border-bottom:none; }
+    .crypto-row:hover { background:var(--card-bg2); padding-left:6px; padding-right:6px; margin:0 -6px; }
+    .crypto-icon { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; font-family:'DM Mono',monospace; }
+    .crypto-name { font-size:13px; font-weight:600; }
+    .crypto-sub { font-size:10px; color:var(--text-dim); margin-top:1px; }
+    .crypto-price { font-family:'DM Mono',monospace; font-size:12px; font-weight:700; text-align:right; }
+    .crypto-change { font-size:10px; font-weight:700; margin-top:2px; text-align:right; }
+    .up { color:var(--success); } .down { color:var(--danger); }
+    .live-dot { width:5px; height:5px; border-radius:50%; background:var(--success); display:inline-block; animation:pulse-dot 1.5s infinite; margin-left:4px; }
+    .live-dot.fake { background:var(--text-dim); animation:none; }
+
+    /* Market indices */
+    .index-row { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); }
+    .index-row:last-child { border-bottom:none; }
+    .index-name { font-size:12px; font-weight:700; }
+    .index-sub { font-size:10px; color:var(--text-dim); }
+    .index-val { font-family:'DM Mono',monospace; font-size:12px; font-weight:700; text-align:right; }
+
+    .chart-wrap { height:120px; position:relative; }
+    .alert-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+    .alert-input,.alert-select { background:var(--input-bg); border:1px solid var(--border); border-radius:8px; padding:8px 10px; color:var(--text); font-size:12px; outline:none; font-family:inherit; }
+    .alert-input { flex:1; } .alert-input:focus,.alert-select:focus { border-color:var(--accent); }
+    .add-alert-btn { width:100%; padding:10px; background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.2); border-radius:9px; color:var(--accent); font-size:13px; font-weight:700; cursor:pointer; transition:0.2s; font-family:inherit; }
+    .add-alert-btn:hover { background:rgba(59,130,246,0.18); }
+    .alert-item { display:flex; justify-content:space-between; align-items:center; padding:7px 10px; background:var(--card-bg2); border-radius:7px; font-size:11px; margin-top:5px; border:1px solid var(--border); }
+    .alert-item .del-btn { background:none; border:none; color:var(--danger); cursor:pointer; font-size:13px; }
+    .budget-row { display:flex; gap:8px; margin-bottom:7px; align-items:center; }
+    .budget-label { font-size:11px; color:var(--text-dim); width:80px; flex-shrink:0; }
+    .budget-input { flex:1; background:var(--input-bg); border:1px solid var(--border); border-radius:7px; padding:7px 9px; color:var(--text); font-size:12px; outline:none; font-family:'DM Mono',monospace; }
+    .budget-input:focus { border-color:var(--accent); }
+    .budget-result { margin-top:8px; padding:11px; border-radius:9px; font-size:13px; font-weight:700; text-align:center; font-family:'DM Mono',monospace; }
+    .budget-ok { background:rgba(34,197,94,0.1); color:var(--success); border:1px solid rgba(34,197,94,0.2); }
+    .budget-warn { background:rgba(239,68,68,0.1); color:var(--danger); border:1px solid rgba(239,68,68,0.2); }
+    .news-item { padding:9px 0; border-bottom:1px solid var(--border); }
+    .news-item:last-child { border-bottom:none; }
+    .news-headline { font-size:12px; font-weight:600; line-height:1.4; margin-bottom:2px; }
+    .news-meta { font-size:10px; color:var(--text-dim); }
+    .predict-btn { width:100%; padding:12px; background:linear-gradient(90deg,var(--accent2),var(--accent)); border:none; border-radius:11px; color:#fff; font-weight:700; font-size:13px; cursor:pointer; margin-top:12px; transition:opacity 0.2s; font-family:inherit; }
+    .predict-btn:hover { opacity:0.88; }
+    .predict-result { display:none; margin-top:10px; padding:12px; background:rgba(139,92,246,0.07); border-radius:11px; border:1px solid rgba(139,92,246,0.2); }
+    .predict-label { font-size:10px; font-weight:800; letter-spacing:1px; color:var(--accent2); text-transform:uppercase; margin-bottom:5px; }
+    .predict-value { font-size:20px; font-weight:800; font-family:'DM Mono',monospace; }
+    .toast { position:fixed; top:18px; right:18px; background:var(--card-bg); border:1px solid var(--accent); border-radius:11px; padding:12px 16px; font-size:13px; font-weight:600; color:var(--text); z-index:999; animation:slideIn 0.3s ease; box-shadow:0 8px 24px var(--shadow); max-width:300px; }
+    @keyframes slideIn { from{opacity:0;transform:translateX(40px)} to{opacity:1;transform:translateX(0)} }
+    .messages::-webkit-scrollbar { width:4px; }
+    .messages::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+    .drag-overlay { display:none; position:absolute; inset:0; background:rgba(59,130,246,0.12); border:2px dashed var(--accent); border-radius:20px; z-index:10; align-items:center; justify-content:center; font-size:18px; font-weight:700; color:var(--accent); pointer-events:none; }
+    .chat-section.drag-over .drag-overlay { display:flex; }
+    .forex-row { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); }
+    .forex-row:last-child { border-bottom:none; }
+
+    /* ========== PAGES ========== */
+    .page { display:none; flex:1; padding:16px; overflow-y:auto; flex-direction:column; gap:16px; height:100vh; }
+    .page.active { display:flex; }
+    .page-title { font-size:22px; font-weight:800; margin-bottom:4px; }
+    .page-sub { font-size:13px; color:var(--text-dim); margin-bottom:16px; }
+    .portfolio-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .p-asset { background:var(--card-bg); border:1px solid var(--border); border-radius:16px; padding:16px; }
+    .p-asset-name { font-size:13px; font-weight:700; margin-bottom:4px; }
+    .p-asset-val { font-size:22px; font-weight:800; font-family:'DM Mono',monospace; color:var(--accent); }
+    .p-asset-sub { font-size:11px; color:var(--text-dim); margin-top:2px; }
+    .p-add-btn { width:100%; padding:14px; background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.2); border-radius:12px; color:var(--accent); font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; margin-top:14px; transition:0.2s; }
+    .p-add-btn:hover { background:rgba(59,130,246,0.2); }
+    .market-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .market-table th { text-align:left; color:var(--text-dim); font-size:11px; font-weight:700; padding:8px 10px; border-bottom:1px solid var(--border); letter-spacing:0.5px; text-transform:uppercase; }
+    .market-table td { padding:10px; border-bottom:1px solid var(--border); font-weight:600; }
+    .market-table tr:last-child td { border-bottom:none; }
+    .market-table tr:hover td { background:var(--card-bg2); }
+    .settings-row { display:flex; justify-content:space-between; align-items:center; padding:14px 0; border-bottom:1px solid var(--border); }
+    .settings-label { font-size:14px; font-weight:600; }
+    .settings-sub { font-size:11px; color:var(--text-dim); margin-top:2px; }
+    .settings-input { background:var(--input-bg); border:1px solid var(--border); border-radius:8px; padding:8px 12px; color:var(--text); font-size:13px; outline:none; font-family:'DM Mono',monospace; width:200px; }
+    .settings-input:focus { border-color:var(--accent); }
+    .settings-save { padding:10px 20px; background:var(--accent); border:none; border-radius:8px; color:#fff; font-weight:700; font-size:13px; cursor:pointer; font-family:inherit; }
+  </style>
+</head>
+<body>
+
+<!-- ========== LANDING PAGE ========== -->
+<div id="landing">
+  <div class="landing-badge">
+    <div class="landing-dot"></div>
+    <span id="ll-badge">AI · Live</span>
+  </div>
+  <h1 class="landing-title">Finance<span class="grad">Bot</span><br>Pro</h1>
+  <p class="landing-sub" id="ll-sub">Din intelligente finansielle assistent. Still spørsmål, last opp dokumenter og få svar — med stemme eller tekst.</p>
+  <div class="landing-features">
+    <div class="feat-pill"><i data-lucide="mic" style="width:15px;height:15px;color:var(--accent)"></i><span id="lf1">Taleassistent</span></div>
+    <div class="feat-pill"><i data-lucide="file-text" style="width:15px;height:15px;color:var(--accent)"></i><span id="lf2">PDF & bilder</span></div>
+    <div class="feat-pill"><i data-lucide="trending-up" style="width:15px;height:15px;color:var(--accent)"></i><span id="lf3">Kryptopriser</span></div>
+    <div class="feat-pill"><i data-lucide="globe" style="width:15px;height:15px;color:var(--accent)"></i><span id="lf4">3 språk</span></div>
+  </div>
+
+  <!-- API KEY INPUT -->
+  <div class="api-key-block">
+    <div class="api-key-label">
+      <i data-lucide="key" style="width:12px;height:12px;"></i>
+      <span id="ll-api-label">Anthropic API-nøkkel</span>
+    </div>
+    <div class="api-key-row">
+      <input class="api-key-input" type="password" id="landing-api-input" placeholder="AIzaSy..." autocomplete="off">
+      <button class="api-save-btn" onclick="saveApiKey()" id="ll-api-btn">Lagre</button>
+    </div>
+    <div class="api-status" id="ll-api-status" id="ll-api-status-text">Uten nøkkel fungerer boten i offline-modus</div>
+  </div>
+
+  <button id="ll-enter"
+    style="padding:22px 64px;font-size:20px;font-weight:800;cursor:pointer;z-index:200;position:relative;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;border:none;border-radius:16px;font-family:inherit;box-shadow:0 0 40px rgba(59,130,246,0.4);"
+    onclick="enterApp()">Åpne FinanceBot →</button>
+  <div class="landing-lang">
+    <button class="ll-btn" id="ll-uk" onclick="setLandingLang('uk')">UA</button>
+    <button class="ll-btn" id="ll-en" onclick="setLandingLang('en')">EN</button>
+    <button class="ll-btn active" id="ll-no" onclick="setLandingLang('no')">NO</button>
+  </div>
+</div>
+
+<!-- ========== APP ========== -->
+<div id="app">
+  <aside class="sidebar">
+    <div class="logo"><i data-lucide="trending-up"></i> FinanceBot</div>
+    <div class="nav-item active" onclick="showPage('dashboard')"><i data-lucide="layout-dashboard"></i><span id="nav-dashboard">Dashboard</span></div>
+    <div class="nav-item" onclick="showPage('portfolio')"><i data-lucide="wallet"></i><span id="nav-portfolio">Portfolio</span></div>
+    <div class="nav-item" onclick="showPage('market')"><i data-lucide="globe"></i><span id="nav-market">Market</span></div>
+    <div class="nav-item" onclick="showPage('settings')"><i data-lucide="settings"></i><span id="nav-settings">Settings</span></div>
+    <div class="sidebar-bottom">
+      <!-- API key in sidebar -->
+      <div class="sidebar-api">
+        <div class="sidebar-api-label" id="sb-api-label">API KEY</div>
+        <div class="sidebar-api-row">
+          <input class="sidebar-api-input" type="password" id="sidebar-api-input" placeholder="AIzaSy..." autocomplete="off">
+          <button class="sidebar-api-btn" onclick="saveApiKeySidebar()">OK</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;margin-top:5px;">
+          <div class="sidebar-api-dot" id="api-dot"></div>
+          <span style="font-size:10px;color:var(--text-dim);" id="api-dot-label">offline</span>
+        </div>
+      </div>
+      <div class="theme-toggle" onclick="toggleTheme()">
+        <span id="theme-label">Mørk modus</span>
+        <div class="toggle-sw"></div>
+      </div>
+      <div class="lang-selector">
+        <button class="lang-btn" id="btn-uk" onclick="setLang('uk')">UA</button>
+        <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
+        <button class="lang-btn active" id="btn-no" onclick="setLang('no')">NO</button>
+      </div>
+    </div>
+  </aside>
+
+  <main style="flex:1;display:flex;overflow:hidden;min-width:0;height:100vh;">
+
+    <!-- ===== PAGE: DASHBOARD ===== -->
+    <div class="page active" id="page-dashboard" style="display:flex;flex-direction:row;gap:16px;padding:16px;overflow:hidden;height:100vh;">
+      <!-- CHAT -->
+      <section class="chat-section" id="chat-section" style="flex:1;min-width:0;max-width:calc(100% - 376px);">
+        <div class="drag-overlay">📄 Slipp filen her</div>
+        <div class="header-bar">
+          <div>
+            <h2 id="chat-title" style="font-size:16px;font-weight:700;">AI Assistent</h2>
+            <p style="font-size:11px;color:var(--text-dim);margin-top:2px;" id="chat-sub">Drives av Gemini AI</p>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <button class="action-btn" id="voiceToggle" onclick="toggleVoiceReply()" title="Voice replies" style="width:auto;padding:0 12px;font-size:10px;font-weight:700;">🔊 OFF</button>
+            <div class="status-badge">
+              <div class="status-dot"></div>
+              <span style="font-size:11px;color:var(--success);font-weight:700;" id="status-text">Live</span>
+            </div>
+          </div>
+        </div>
+        <div class="messages" id="messages"></div>
+        <div class="doc-actions" id="doc-actions" style="display:none;"></div>
+        <div class="upload-bar" id="upload-bar">
+          <span style="font-size:11px;color:var(--text-dim);font-weight:600;" id="ub-label">Vedlegg:</span>
+          <div id="upload-chips"></div>
+        </div>
+        <div id="quick-chips"></div>
+        <div class="input-wrapper">
+          <input class="chat-input" type="text" id="userInput" placeholder="Skriv et spørsmål..." onkeydown="if(event.key==='Enter') sendMessage()">
+          <input type="file" id="fileInput" accept=".pdf,image/*" multiple style="display:none" onchange="handleFiles(this.files)">
+          <button class="action-btn" id="uploadBtn" onclick="document.getElementById('fileInput').click()"><i data-lucide="paperclip" style="width:17px;height:17px;"></i></button>
+          <button class="action-btn" id="mic" onclick="toggleMic()"><i data-lucide="mic" style="width:17px;height:17px;"></i></button>
+          <button class="action-btn" id="exportBtn" onclick="exportPDF()"><i data-lucide="download" style="width:17px;height:17px;"></i></button>
+          <button class="action-btn" id="send" onclick="sendMessage()"><i data-lucide="send" style="width:17px;height:17px;"></i></button>
+        </div>
+      </section>
+
+      <!-- WIDGETS -->
+      <section class="widgets-section" style="width:360px;flex-shrink:0;">
+
+      <!-- DATE/TIME -->
+      <div class="card" style="padding:14px 18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div id="cal-date" style="font-size:20px;font-weight:800;letter-spacing:-0.5px;"></div>
+            <div id="cal-day" style="font-size:11px;color:var(--text-dim);margin-top:2px;font-weight:600;"></div>
+          </div>
+          <div style="text-align:right;">
+            <div id="cal-time" style="font-size:22px;font-weight:800;font-family:'DM Mono',monospace;color:var(--accent);"></div>
+            <div id="cal-week" style="font-size:10px;color:var(--text-dim);margin-top:2px;font-weight:600;"></div>
+          </div>
+        </div>
+        <div id="week-strip" style="display:flex;gap:5px;margin-top:10px;"></div>
+      </div>
+
+      <!-- CRYPTO — real data badge -->
+      <div class="card">
+        <div class="card-title">
+          <i data-lucide="bar-chart-2" style="width:13px;height:13px;"></i>
+          <span id="w-crypto">Kryptopriser</span>
+          <span class="live-dot" id="crypto-live-dot" title="Live data fra CoinGecko"></span>
+        </div>
+        <div id="crypto-list">
+          <div class="crypto-row" onclick="showChart('BTC')">
+            <div style="display:flex;align-items:center;gap:9px">
+              <div class="crypto-icon" style="background:rgba(245,158,11,0.15);color:#f59e0b;">₿</div>
+              <div><div class="crypto-name">Bitcoin</div><div class="crypto-sub">BTC</div></div>
+            </div>
+            <div><div class="crypto-price" id="p-btc">$ —</div><div class="crypto-change" id="c-btc">—</div></div>
+          </div>
+          <div class="crypto-row" onclick="showChart('ETH')">
+            <div style="display:flex;align-items:center;gap:9px">
+              <div class="crypto-icon" style="background:rgba(98,126,234,0.15);color:#627eea;">Ξ</div>
+              <div><div class="crypto-name">Ethereum</div><div class="crypto-sub">ETH</div></div>
+            </div>
+            <div><div class="crypto-price" id="p-eth">$ —</div><div class="crypto-change" id="c-eth">—</div></div>
+          </div>
+          <div class="crypto-row" onclick="showChart('SOL')">
+            <div style="display:flex;align-items:center;gap:9px">
+              <div class="crypto-icon" style="background:rgba(153,69,255,0.15);color:#9945ff;">◎</div>
+              <div><div class="crypto-name">Solana</div><div class="crypto-sub">SOL</div></div>
+            </div>
+            <div><div class="crypto-price" id="p-sol">$ —</div><div class="crypto-change" id="c-sol">—</div></div>
+          </div>
+          <div class="crypto-row" onclick="showChart('BNB')">
+            <div style="display:flex;align-items:center;gap:9px">
+              <div class="crypto-icon" style="background:rgba(243,186,47,0.15);color:#f3ba2f;">B</div>
+              <div><div class="crypto-name">BNB</div><div class="crypto-sub">BNB</div></div>
+            </div>
+            <div><div class="crypto-price" id="p-bnb">$ —</div><div class="crypto-change" id="c-bnb">—</div></div>
+          </div>
+          <div class="crypto-row" onclick="showChart('XRP')">
+            <div style="display:flex;align-items:center;gap:9px">
+              <div class="crypto-icon" style="background:rgba(0,170,228,0.15);color:#00aae4;">✕</div>
+              <div><div class="crypto-name">XRP</div><div class="crypto-sub">XRP</div></div>
+            </div>
+            <div><div class="crypto-price" id="p-xrp">$ —</div><div class="crypto-change" id="c-xrp">—</div></div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:8px;text-align:right;" id="crypto-updated">—</div>
+      </div>
+
+      <!-- PRICE CHART -->
+      <div class="card">
+        <div class="card-title"><i data-lucide="activity" style="width:13px;height:13px;"></i><span id="w-chart">Priskart — BTC</span></div>
+        <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
+      </div>
+
+      <!-- MARKET INDICES -->
+      <div class="card">
+        <div class="card-title">
+          <i data-lucide="trending-up" style="width:13px;height:13px;"></i>
+          <span id="w-indices">Markedsindekser</span>
+          <span class="live-dot fake" id="indices-dot" title="Simulerte data (børs stengt)"></span>
+        </div>
+        <div id="indices-list"></div>
+      </div>
+
+      <!-- FOREX -->
+      <div class="card">
+        <div class="card-title">
+          <i data-lucide="dollar-sign" style="width:13px;height:13px;"></i>
+          <span id="w-forex">Valutakurser</span>
+          <span class="live-dot" id="forex-live-dot"></span>
+        </div>
+        <div id="forex-list"></div>
+      </div>
+
+      <!-- PREDICT -->
+      <div class="card">
+        <div class="card-title"><i data-lucide="zap" style="width:13px;height:13px;color:#8b5cf6;"></i><span id="w-predict">Markedsprognose</span></div>
+        <p style="font-size:12px;color:var(--text-dim);line-height:1.55;" id="w-predict-desc">AI-analyse av volatilitet og trender.</p>
+        <div class="predict-result" id="prediction-result">
+          <div class="predict-label" id="pred-label">Analyse fullført</div>
+          <div class="predict-value" id="pred-value">–</div>
+        </div>
+        <button class="predict-btn" id="pred-btn" onclick="getPrediction()"><span id="pred-btn-text">Beregn prognose</span></button>
+      </div>
+
+      <!-- ALERTS -->
+      <div class="card">
+        <div class="card-title"><i data-lucide="bell" style="width:13px;height:13px;"></i><span id="w-alert">Prisvarsel</span></div>
+        <div class="alert-row">
+          <select class="alert-select" id="alert-coin">
+            <option value="BTC">BTC</option><option value="ETH">ETH</option>
+            <option value="SOL">SOL</option><option value="BNB">BNB</option><option value="XRP">XRP</option>
+          </select>
+          <select class="alert-select" id="alert-dir">
+            <option value="above" id="above-txt">↑ Over</option>
+            <option value="below" id="below-txt">↓ Under</option>
+          </select>
+          <input class="alert-input" type="number" id="alert-price" placeholder="$ pris" style="width:80px;">
+        </div>
+        <button class="add-alert-btn" onclick="addAlert()" id="add-alert-btn">+ Legg til varsel</button>
+        <div id="alerts-list"></div>
+      </div>
+
+      <!-- BUDGET -->
+      <div class="card">
+        <div class="card-title"><i data-lucide="calculator" style="width:13px;height:13px;"></i><span id="w-budget">Budsjettkalkulatор</span></div>
+        <div class="budget-row"><span class="budget-label" id="b-income">Inntekt</span><input class="budget-input" type="number" id="b-inc" placeholder="50 000" oninput="calcBudget()"></div>
+        <div class="budget-row"><span class="budget-label" id="b-housing">Bolig</span><input class="budget-input" type="number" id="b-house" placeholder="12 000" oninput="calcBudget()"></div>
+        <div class="budget-row"><span class="budget-label" id="b-food-l">Mat</span><input class="budget-input" type="number" id="b-food" placeholder="5 000" oninput="calcBudget()"></div>
+        <div class="budget-row"><span class="budget-label" id="b-other">Annet</span><input class="budget-input" type="number" id="b-other-inp" placeholder="3 000" oninput="calcBudget()"></div>
+        <div id="budget-result" style="display:none;"></div>
+      </div>
+
+      <!-- NEWS -->
+      <div class="card">
+        <div class="card-title"><i data-lucide="newspaper" style="width:13px;height:13px;"></i><span id="w-news">Markedsnyheter</span></div>
+        <div id="news-list"><div style="color:var(--text-dim);font-size:12px;text-align:center;padding:14px;" id="news-loading">Laster nyheter...</div></div>
+      </div>
+    </section>
+    </div><!-- /page-dashboard -->
+
+    <!-- ===== PAGE: PORTFOLIO ===== -->
+    <div class="page" id="page-portfolio" style="overflow-y:auto;flex-direction:column;">
+      <div class="page-title" id="port-title">📊 Portefølje</div>
+      <div class="page-sub" id="port-sub">Legg til dine eiendeler og følg verdien</div>
+      <div class="portfolio-grid" id="portfolio-grid"></div>
+      <button class="p-add-btn" onclick="addPortfolioAsset()" id="port-add-btn">+ Legg til eiendel</button>
+      <div class="card" style="margin-top:14px;">
+        <div class="card-title">📈 <span id="port-total-label">Total verdi</span></div>
+        <div id="port-total" style="font-size:28px;font-weight:800;font-family:'DM Mono',monospace;color:var(--success);">$ 0.00</div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: MARKET ===== -->
+    <div class="page" id="page-market" style="overflow-y:auto;flex-direction:column;">
+      <div class="page-title" id="mkt-title">🌐 Marked</div>
+      <div class="page-sub" id="mkt-sub">Live markedsdata — krypto, indekser og valuta</div>
+      <div class="card">
+        <div class="card-title"><i data-lucide="bar-chart-2" style="width:13px;height:13px;"></i> Krypto Live</div>
+        <table class="market-table"><thead><tr><th>Coin</th><th>Pris</th><th>24h %</th></tr></thead><tbody id="mkt-crypto-body"></tbody></table>
+      </div>
+      <div class="card" style="margin-top:14px;">
+        <div class="card-title"><i data-lucide="trending-up" style="width:13px;height:13px;"></i> Indekser</div>
+        <table class="market-table"><thead><tr><th>Indeks</th><th>Verdi</th><th>%</th></tr></thead><tbody id="mkt-indices-body"></tbody></table>
+      </div>
+      <div class="card" style="margin-top:14px;">
+        <div class="card-title"><i data-lucide="dollar-sign" style="width:13px;height:13px;"></i> Valuta vs USD</div>
+        <table class="market-table"><thead><tr><th>Valuta</th><th>Kurs</th><th>%</th></tr></thead><tbody id="mkt-forex-body"></tbody></table>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: SETTINGS ===== -->
+    <div class="page" id="page-settings" style="overflow-y:auto;flex-direction:column;">
+      <div class="page-title">⚙️ <span id="set-title">Innstillinger</span></div>
+      <div class="page-sub" id="set-sub">Konfigurasjon og API-nøkkel</div>
+      <div class="card">
+        <div class="card-title">🔑 Google Gemini API (бесплатно)</div>
+        <div class="settings-row">
+          <div><div class="settings-label">API-nøkkel</div><div class="settings-sub">aistudio.google.com → Get API Key</div></div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input class="settings-input" type="password" id="settings-api-input" placeholder="AIzaSy...">
+            <button class="settings-save" onclick="saveApiKeySettings()">OK</button>
+          </div>
+        </div>
+        <div id="set-api-status" style="font-size:13px;font-weight:700;color:var(--text-dim);padding:8px 0;">⚪ Offline</div>
+        <div style="margin-top:8px;padding:12px;background:rgba(59,130,246,0.07);border-radius:10px;border:1px solid rgba(59,130,246,0.15);">
+          <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px;">Как получить бесплатный ключ:</div>
+          <div style="font-size:12px;color:var(--text-mid);line-height:1.8;">1. Зайди на <b>aistudio.google.com</b><br>2. Войди через Google аккаунт<br>3. Нажми <b>"Get API Key"</b> → <b>"Create API key"</b><br>4. Скопируй ключ (начинается с <b>AIzaSy...</b>)<br>5. Вставь сюда и нажми OK</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px;">
+        <div class="card-title">🎨 Внешний вид</div>
+        <div class="settings-row">
+          <div class="settings-label">Тема / Theme</div>
+          <button class="settings-save" onclick="toggleTheme()">Переключить</button>
+        </div>
+        <div class="settings-row">
+          <div class="settings-label">Язык / Мова / Språk</div>
+          <div style="display:flex;gap:6px;">
+            <button class="lang-btn" onclick="setLang('uk')">UA</button>
+            <button class="lang-btn" onclick="setLang('en')">EN</button>
+            <button class="lang-btn" onclick="setLang('no')">NO</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px;">
+        <div class="card-title">ℹ️ О боте</div>
+        <div style="font-size:13px;color:var(--text-mid);line-height:2;">
+          🔹 Крипто: CoinGecko (бесплатно)<br>
+          🔹 Форекс: ExchangeRate API (бесплатно)<br>
+          🔹 AI: Google Gemini 1.5 Flash (бесплатно)<br>
+          🔹 Анализ PDF и фото документов<br>
+          🔹 Экспорт чата в PDF
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+lucide.createIcons();
+
+/* ========== STATE ========== */
+let lang = 'no';
+let apiKey = '';
+let chatMessages = [];
+let isRecording = false;
+let recognition = null;
+let alerts = [];
+let priceChart = null;
+let currentChartCoin = 'BTC';
+let prices = { BTC:0, ETH:0, SOL:0, BNB:0, XRP:0 };
+let prices24h = { BTC:0, ETH:0, SOL:0, BNB:0, XRP:0 };
+let chartHistory = { BTC:[], ETH:[], SOL:[], BNB:[], XRP:[] };
+let pendingFiles = [];
+let voiceReplyOn = false;
+let isSpeaking = false;
+let cryptoLoaded = false;
+
+/* ========== API KEY ========== */
+function saveApiKey() {
+  const val = document.getElementById('landing-api-input').value.trim();
+  if (val) {
+    apiKey = val;
+    sessionStorage.setItem('fb_api_key', val);
+    document.getElementById('ll-api-status').textContent = '✓ Nøkkel lagret — AI-modus aktiv';
+    document.getElementById('ll-api-status').className = 'api-status ok';
+    showToast('🔑 API-nøkkel lagret!');
+  }
+}
+function saveApiKeySidebar() {
+  const val = document.getElementById('sidebar-api-input').value.trim();
+  if (val) {
+    apiKey = val;
+    sessionStorage.setItem('fb_api_key', val);
+    updateApiDot();
+    showToast('🔑 API-nøkkel lagret!');
+  }
+}
+function updateApiDot() {
+  const dot = document.getElementById('api-dot');
+  const lbl = document.getElementById('api-dot-label');
+  if (apiKey) { dot.classList.add('ok'); lbl.textContent = 'AI aktiv'; }
+  else { dot.classList.remove('ok'); lbl.textContent = 'offline'; }
+}
+function loadSavedKey() {
+  const saved = sessionStorage.getItem('fb_api_key');
+  if (saved) { apiKey = saved; }
+}
+
+/* ========== i18n ========== */
+const i18n = {
+  uk:{
+    welcome:"Привіт! Я ваш фінансовий помічник з аналізом документів. Завантажте файл (PDF/зображення) або задайте питання!\n\n📄 Що я вмію:\n• Аналізувати кошториси та рахунки\n• Перевіряти фінансові розрахунки\n• Давати поради по бюджету та інвестиціям\n• Пояснювати формули та методи розрахунків\n• Відслідковувати крипто та ринки",
+    placeholder:"Напишіть питання або завантажте файл...",
+    predict:"Розрахувати прогноз", predicting:"Аналізую...",
+    title:"AI Асистент", sub:"Підтримується Gemini AI", status:"Live",
+    nav_d:"Дашборд", nav_p:"Портфель", nav_m:"Ринок", nav_s:"Налаштування",
+    w_crypto:"Криптоціни", w_chart:"Графік цін", w_predict:"Прогноз ринку", w_indices:"Ринкові індекси",
+    w_predict_desc:"AI-аналіз волатильності та трендів.",
+    w_alert:"Сповіщення", w_budget:"Калькулятор", w_news:"Новини",
+    b_income:"Дохід", b_housing:"Житло", b_food:"Їжа", b_other:"Інше",
+    add_alert:"+ Додати", above:"↑ Вище", below:"↓ Нижче",
+    theme_d:"Темна тема", theme_l:"Світла тема",
+    bullish:"Бичачий", bearish:"Ведмежий", pred_done:"Аналіз завершено",
+    budget_left:"Залишок:", budget_over:"Перевитрата:",
+    news_load:"Завантаження...", export_empty:"Немає повідомлень.",
+    ub_label:"Вкладення:", voice_on:"🔊 ВКЛ", voice_off:"🔊 ВИКЛ",
+    ll_badge:"AI · Наживо",
+    ll_sub:"Ваш інтелектуальний фінансовий помічник. Аналіз документів, кошториси, крипто та ринки.",
+    ll_enter:"Відкрити FinanceBot →",
+    lf1:"Аналіз документів", lf2:"PDF та фото", lf3:"Крипто наживо", lf4:"3 мови",
+    w_forex:"Курс валют", forex_upd:"Оновлено",
+    ll_api_label:"Google Gemini API-ключ (безкоштовно)",
+    ll_api_btn:"Зберегти",
+    ll_api_hint:"Безкоштовно на aistudio.google.com",
+    doc_analyze:"📄 Проаналізувати документ",
+    doc_estimate:"🧮 Скласти кошторис",
+    doc_check:"✅ Перевірити розрахунки",
+    doc_advice:"💡 Дати фінансові поради",
+    doc_extract:"📊 Витягнути цифри",
+    no_key_msg:"⚠️ API-ключ не введено. Введіть ключ у полі зліва для повноцінної роботи. Зараз відповіді в офлайн-режимі.",
+  },
+  en:{
+    welcome:"Hello! I'm your financial assistant with document analysis. Upload a file (PDF/image) or ask a question!\n\n📄 What I can do:\n• Analyze estimates and invoices\n• Verify financial calculations\n• Advise on budgeting and investments\n• Explain formulas and calculation methods\n• Track crypto and markets",
+    placeholder:"Ask a question or upload a file...",
+    predict:"Get Prediction", predicting:"Analyzing...",
+    title:"AI Assistant", sub:"Powered by Gemini AI", status:"Live",
+    nav_d:"Dashboard", nav_p:"Portfolio", nav_m:"Market", nav_s:"Settings",
+    w_crypto:"Crypto Prices", w_chart:"Price Chart", w_predict:"Market Forecast", w_indices:"Market Indices",
+    w_predict_desc:"AI analysis of volatility and trends.",
+    w_alert:"Price Alerts", w_budget:"Budget Calc", w_news:"Market News",
+    b_income:"Income", b_housing:"Housing", b_food:"Food", b_other:"Other",
+    add_alert:"+ Add Alert", above:"↑ Above", below:"↓ Below",
+    theme_d:"Dark mode", theme_l:"Light mode",
+    bullish:"Bullish", bearish:"Bearish", pred_done:"Analysis complete",
+    budget_left:"Remaining:", budget_over:"Overspend:",
+    news_load:"Loading...", export_empty:"No messages to export.",
+    ub_label:"Attachments:", voice_on:"🔊 ON", voice_off:"🔊 OFF",
+    ll_badge:"AI · Live",
+    ll_sub:"Your intelligent financial assistant. Document analysis, estimates, crypto & markets.",
+    ll_enter:"Open FinanceBot →",
+    lf1:"Document Analysis", lf2:"PDF & Photos", lf3:"Live Crypto", lf4:"3 Languages",
+    w_forex:"Exchange Rates", forex_upd:"Updated",
+    ll_api_label:"Google Gemini API Key (free)",
+    ll_api_btn:"Save",
+    ll_api_hint:"Free at aistudio.google.com",
+    doc_analyze:"📄 Analyze document",
+    doc_estimate:"🧮 Build estimate",
+    doc_check:"✅ Check calculations",
+    doc_advice:"💡 Give financial advice",
+    doc_extract:"📊 Extract numbers",
+    no_key_msg:"⚠️ No API key entered. Enter your key on the left to enable full AI mode. Currently in offline mode.",
+  },
+  no:{
+    welcome:"Hei! Jeg er din finansielle assistent med dokumentanalyse. Last opp en fil (PDF/bilde) eller still et spørsmål!\n\n📄 Hva jeg kan gjøre:\n• Analysere kostnadsoverslag og fakturaer\n• Kontrollere finansielle beregninger\n• Gi råd om budsjett og investeringer\n• Forklare formler og beregningsmetoder\n• Følge krypto og markeder",
+    placeholder:"Skriv et spørsmål eller last opp en fil...",
+    predict:"Beregn prognose", predicting:"Analyserer...",
+    title:"AI Assistent", sub:"Drives av Gemini AI", status:"Live",
+    nav_d:"Dashboard", nav_p:"Portefølje", nav_m:"Marked", nav_s:"Innstillinger",
+    w_crypto:"Kryptopriser", w_chart:"Priskart", w_predict:"Markedsprognose", w_indices:"Markedsindekser",
+    w_predict_desc:"AI-analyse av volatilitet og trender.",
+    w_alert:"Prisvarsel", w_budget:"Budsjettkalkulatор", w_news:"Markedsnyheter",
+    b_income:"Inntekt", b_housing:"Bolig", b_food:"Mat", b_other:"Annet",
+    add_alert:"+ Legg til varsel", above:"↑ Over", below:"↓ Under",
+    theme_d:"Mørk modus", theme_l:"Lys modus",
+    bullish:"Bullish", bearish:"Bearish", pred_done:"Analyse fullført",
+    budget_left:"Igjen:", budget_over:"Overforbruk:",
+    news_load:"Laster nyheter...", export_empty:"Ingen meldinger å eksportere.",
+    ub_label:"Vedlegg:", voice_on:"🔊 PÅ", voice_off:"🔊 AV",
+    ll_badge:"AI · Live",
+    ll_sub:"Din intelligente finansielle assistent. Dokumentanalyse, kostnadsoverslag, krypto og markeder.",
+    ll_enter:"Åpne FinanceBot →",
+    lf1:"Dokumentanalyse", lf2:"PDF & bilder", lf3:"Live krypto", lf4:"3 språk",
+    w_forex:"Valutakurser", forex_upd:"Oppdatert",
+    ll_api_label:"Google Gemini API-nøkkel (gratis)",
+    ll_api_btn:"Lagre",
+    ll_api_hint:"Gratis på aistudio.google.com",
+    doc_analyze:"📄 Analyser dokument",
+    doc_estimate:"🧮 Lag kostnadsoverslag",
+    doc_check:"✅ Sjekk beregninger",
+    doc_advice:"💡 Gi finansielle råd",
+    doc_extract:"📊 Trekk ut tall",
+    no_key_msg:"⚠️ Ingen API-nøkkel angitt. Skriv inn nøkkelen til venstre for full AI-funksjonalitet. Kjører nå i offline-modus.",
+  }
+};
+
+const quickChips = {
+  uk:['💰 Як заощадити?','₿ Що таке Bitcoin?','📊 Скласти бюджет','📈 Як інвестувати?','🧮 Розрахувати іпотеку'],
+  en:['💰 How to save money?','₿ What is Bitcoin?','📊 Budget tips','📈 How to invest?','🧮 Mortgage calculator'],
+  no:['💰 Hvordan spare?','₿ Hva er Bitcoin?','📊 Budsjett tips','📈 Hvordan investere?','🧮 Beregn boliglån']
+};
+
+// Enhanced system prompts with document analysis expertise
+const SYSTEM = {
+  uk:`Ти — FinanceBot Pro, експертний фінансовий консультант з 20-річним досвідом та спеціалізацією на аналізі документів.
+
+АНАЛІЗ ДОКУМЕНТІВ:
+- При отриманні PDF або зображення — ЗАВЖДИ детально аналізуй його зміст
+- Виявляй всі числові дані, суми, відсотки, дати
+- Перевіряй арифметичні розрахунки на точність
+- Вказуй на помилки та невідповідності
+- Для кошторисів: розбивай на категорії, перевіряй реалістичність цін
+- Для рахунків: перевіряй правильність нарахувань та знижок
+- Для фінансових звітів: аналізуй ключові показники
+
+РОЗРАХУНКИ — завжди показуй формули:
+- Іпотека: M = P[r(1+r)^n]/[(1+r)^n-1]
+- Складний відсоток: A = P(1+r/n)^(nt)
+- ROI: (Прибуток - Витрати) / Витрати × 100%
+- NPV, IRR для інвестицій
+
+ТЕМИ: криптовалюти, фондовий ринок, бюджетування, заощадження, інвестиції, кредити, іпотека, пенсія, податки, кошториси, рахунки-фактури.
+
+Відповідай ТІЛЬКИ українською мовою. Використовуй реальні цифри та конкретні поради. Попереджай про ризики.`,
+
+  en:`You are FinanceBot Pro, an expert financial advisor with 20 years of experience specializing in document analysis.
+
+DOCUMENT ANALYSIS:
+- When receiving PDF or image — ALWAYS analyze its content in detail
+- Identify all numerical data, amounts, percentages, dates
+- Verify arithmetic calculations for accuracy
+- Point out errors and inconsistencies
+- For estimates: break down by category, check price realism
+- For invoices: verify charges and discounts
+- For financial statements: analyze key metrics
+
+CALCULATIONS — always show formulas:
+- Mortgage: M = P[r(1+r)^n]/[(1+r)^n-1]
+- Compound interest: A = P(1+r/n)^(nt)
+- ROI: (Profit - Cost) / Cost × 100%
+- NPV, IRR for investments
+
+TOPICS: crypto, stock market, budgeting, savings, investments, loans, mortgages, retirement, taxes, estimates, invoices.
+
+Respond ONLY in English. Use real figures and specific actionable advice. Always warn about risks.`,
+
+  no:`Du er FinanceBot Pro, en ekspert finansrådgiver med 20 års erfaring og spesialisering i dokumentanalyse.
+
+DOKUMENTANALYSE:
+- Når du mottar PDF eller bilde — analyser alltid innholdet i detalj
+- Identifiser alle numeriske data, beløp, prosenter, datoer
+- Verifiser aritmetiske beregninger for nøyaktighet
+- Påpek feil og avvik
+- For kostnadsoverslag: del opp etter kategori, sjekk prisrealisme
+- For fakturaer: verifiser gebyrer og rabatter
+- For finansielle rapporter: analyser nøkkelmetrikker
+
+BEREGNINGER — vis alltid formler:
+- Boliglån: M = P[r(1+r)^n]/[(1+r)^n-1]
+- Renters rente: A = P(1+r/n)^(nt)
+- ROI: (Fortjeneste - Kostnad) / Kostnad × 100%
+- NPV, IRR for investeringer
+
+EMNER: krypto, aksjemarked, budsjettering, sparing, investeringer, lån, boliglån, pensjon, skatt, kostnadsoverslag, fakturaer.
+
+Svar KUN på norsk. Bruk reelle tall og konkrete råd. Advar alltid om risiko.`
+};
+
+/* ========== LANDING ========== */
+function setLandingLang(l) {
+  lang = l;
+  document.querySelectorAll('.ll-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('ll-'+l).classList.add('active');
+  const u = i18n[l];
+  document.getElementById('ll-badge').textContent = u.ll_badge;
+  document.getElementById('ll-sub').textContent = u.ll_sub;
+  document.getElementById('ll-enter').textContent = u.ll_enter;
+  document.getElementById('lf1').textContent = u.lf1;
+  document.getElementById('lf2').textContent = u.lf2;
+  document.getElementById('lf3').textContent = u.lf3;
+  document.getElementById('lf4').textContent = u.lf4;
+  document.getElementById('ll-api-label').textContent = u.ll_api_label;
+  document.getElementById('ll-api-btn').textContent = u.ll_api_btn;
+  document.getElementById('ll-api-status').textContent = u.ll_api_hint;
+}
+
+function enterApp() {
+  loadSavedKey();
+  document.getElementById('landing').style.display = 'none';
+  document.getElementById('app').classList.add('show');
+  setTimeout(() => {
+    try { initChart(); } catch(e) {}
+    try { setLang(lang); } catch(e) {}
+    try { loadNews(); } catch(e) {}
+    try { renderCalendar(); } catch(e) {}
+    try { renderForex(); } catch(e) {}
+    try { renderIndices(); } catch(e) {}
+    try { updateClock(); } catch(e) {}
+    try { fetchRealCryptoPrices(); } catch(e) {}
+    try { fetchRealForex(); } catch(e) {}
+    try { setInterval(updateClock,1000); } catch(e) {}
+    try { setInterval(()=>{ fetchRealCryptoPrices(); fetchRealForex(); }, 60000); } catch(e) {}
+    try { setInterval(driftIndices, 3000); } catch(e) {}
+    try { updateApiDot(); } catch(e) {}
+    if (apiKey) {
+      document.getElementById('sidebar-api-input').value = '••••••••••••';
+    }
+  }, 100);
+}
+
+/* ========== REAL CRYPTO PRICES via CoinGecko (free, no key) ========== */
+async function fetchRealCryptoPrices() {
+  try {
+    const ids = 'bitcoin,ethereum,solana,binancecoin,ripple';
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('CoinGecko error');
+    const data = await res.json();
+
+    const map = {
+      BTC: data.bitcoin,
+      ETH: data.ethereum,
+      SOL: data.solana,
+      BNB: data.binancecoin,
+      XRP: data.ripple
+    };
+
+    Object.entries(map).forEach(([coin, d]) => {
+      if (!d) return;
+      prices[coin] = d.usd;
+      const chg = d.usd_24h_change || 0;
+      const el = document.getElementById(`p-${coin.toLowerCase()}`);
+      const cel = document.getElementById(`c-${coin.toLowerCase()}`);
+      if (el) el.textContent = '$ ' + formatPrice(d.usd);
+      if (cel) {
+        cel.textContent = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
+        cel.className = 'crypto-change ' + (chg >= 0 ? 'up' : 'down');
+      }
+      if (chartHistory[coin].length > 30) chartHistory[coin].shift();
+      chartHistory[coin].push(d.usd);
+      checkAlerts(coin, d.usd);
+    });
+
+    cryptoLoaded = true;
+    const dot = document.getElementById('crypto-live-dot');
+    if (dot) { dot.classList.remove('fake'); dot.title = 'Live data — CoinGecko'; }
+    const upd = document.getElementById('crypto-updated');
+    if (upd) {
+      const now = new Date();
+      upd.textContent = `CoinGecko · ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+    }
+
+    if (priceChart && currentChartCoin) {
+      priceChart.data.datasets[0].data = [...chartHistory[currentChartCoin]];
+      priceChart.update('none');
+    }
+  } catch(e) {
+    // fallback: small drift on existing prices
+    const dot = document.getElementById('crypto-live-dot');
+    if (dot) { dot.classList.add('fake'); dot.title = 'Simulerte data'; }
+    const fallback = { BTC:94000, ETH:3200, SOL:155, BNB:580, XRP:0.52 };
+    Object.keys(fallback).forEach(coin => {
+      if (!prices[coin]) prices[coin] = fallback[coin];
+      const drift = (Math.random()-0.5) * prices[coin] * 0.002;
+      prices[coin] = Math.max(prices[coin] + drift, 0.01);
+      const el = document.getElementById(`p-${coin.toLowerCase()}`);
+      if (el) el.textContent = '$ ' + formatPrice(prices[coin]);
+    });
+  }
+}
+
+function formatPrice(p) {
+  if (p >= 1000) return p.toLocaleString(undefined, {minimumFractionDigits:2,maximumFractionDigits:2});
+  if (p >= 1) return p.toFixed(4);
+  return p.toFixed(5);
+}
+
+/* ========== REAL FOREX via ExchangeRate-API (free tier) ========== */
+const forexBase = { EUR:0.924, NOK:10.54, UAH:41.2, GBP:0.792, JPY:154.3, SEK:10.72 };
+let forexRates = {...forexBase};
+const forexFlags = { EUR:'🇪🇺', NOK:'🇳🇴', UAH:'🇺🇦', GBP:'🇬🇧', JPY:'🇯🇵', SEK:'🇸🇪' };
+const forexNames = {
+  en:{ EUR:'Euro', NOK:'Norwegian Krone', UAH:'Ukrainian Hryvnia', GBP:'British Pound', JPY:'Japanese Yen', SEK:'Swedish Krona'},
+  uk:{ EUR:'Євро', NOK:'Норвезька крона', UAH:'Гривня', GBP:'Фунт стерлінгів', JPY:'Японська єна', SEK:'Шведська крона'},
+  no:{ EUR:'Euro', NOK:'Norsk krone', UAH:'Ukrainsk hryvnia', GBP:'Britisk pund', JPY:'Japansk yen', SEK:'Svensk krone'}
+};
+let forexLive = false;
+
+async function fetchRealForex() {
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/USD');
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    if (data.rates) {
+      ['EUR','NOK','UAH','GBP','JPY','SEK'].forEach(cur => {
+        if (data.rates[cur]) forexRates[cur] = data.rates[cur];
+      });
+      forexLive = true;
+    }
+  } catch(e) {
+    // small drift
+    Object.keys(forexRates).forEach(cur => {
+      forexRates[cur] += (Math.random()-0.5) * 0.001 * forexBase[cur];
+    });
+    forexLive = false;
+  }
+  renderForex();
+}
+
+function renderForex() {
+  const list = document.getElementById('forex-list');
+  if (!list) return;
+  const names = forexNames[lang] || forexNames.en;
+  const now = new Date();
+  const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+  const u = i18n[lang];
+  list.innerHTML = '';
+  const dot = document.getElementById('forex-live-dot');
+  if (dot) { dot.className = 'live-dot' + (forexLive ? '' : ' fake'); }
+
+  Object.keys(forexRates).forEach(cur => {
+    const rate = forexRates[cur];
+    const baseRate = forexBase[cur];
+    const pct = ((rate - baseRate) / baseRate * 100).toFixed(2);
+    const isUp = parseFloat(pct) >= 0;
+    const row = document.createElement('div');
+    row.className = 'forex-row';
+    row.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:18px;">${forexFlags[cur]}</span>
+        <div>
+          <div style="font-size:12px;font-weight:700;">${cur}/USD</div>
+          <div style="font-size:10px;color:var(--text-dim);">${names[cur]||cur}</div>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;">${rate.toFixed(cur==='JPY'?1:3)}</div>
+        <div style="font-size:10px;font-weight:700;color:${isUp?'var(--success)':'var(--danger)'};">${isUp?'+':''}${pct}%</div>
+      </div>`;
+    list.appendChild(row);
+  });
+  const upd = document.createElement('div');
+  upd.style.cssText = 'font-size:10px;color:var(--text-dim);text-align:right;margin-top:6px;';
+  upd.textContent = (forexLive ? '🟢 ' : '⚪ ') + `${u.forex_upd||'Updated'}: ${timeStr}`;
+  list.appendChild(upd);
+}
+
+/* ========== MARKET INDICES (simulated with realistic drift) ========== */
+const indicesData = {
+  'S&P 500':   { val: 5432.10, base: 5432.10, color:'#22c55e', icon:'🇺🇸' },
+  'NASDAQ':    { val: 17234.50, base: 17234.50, color:'#3b82f6', icon:'🇺🇸' },
+  'FTSE 100':  { val: 8234.20, base: 8234.20, color:'#f59e0b', icon:'🇬🇧' },
+  'DAX':       { val: 18456.30, base: 18456.30, color:'#8b5cf6', icon:'🇩🇪' },
+  'Brent Oil': { val: 82.45, base: 82.45, color:'#ef4444', icon:'🛢️' },
+  'Gold':      { val: 2312.80, base: 2312.80, color:'#f59e0b', icon:'🥇' }
+};
+
+function renderIndices() {
+  const list = document.getElementById('indices-list');
+  if (!list) return;
+  list.innerHTML = '';
+  Object.entries(indicesData).forEach(([name, d]) => {
+    const pct = ((d.val - d.base) / d.base * 100).toFixed(2);
+    const isUp = parseFloat(pct) >= 0;
+    const row = document.createElement('div');
+    row.className = 'index-row';
+    row.innerHTML = `
+      <div style="display:flex;align-items:center;gap:7px;">
+        <span style="font-size:16px;">${d.icon}</span>
+        <div>
+          <div class="index-name">${name}</div>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div class="index-val">${d.val.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+        <div style="font-size:10px;font-weight:700;color:${isUp?'var(--success)':'var(--danger)'};">${isUp?'+':''}${pct}%</div>
+      </div>`;
+    list.appendChild(row);
+  });
+}
+
+function driftIndices() {
+  Object.values(indicesData).forEach(d => {
+    d.val += (Math.random()-0.5) * d.base * 0.0008;
+  });
+  renderIndices();
+}
+
+/* ========== LANG ========== */
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-'+l).classList.add('active');
+  const u = i18n[l];
+  document.getElementById('userInput').placeholder = u.placeholder;
+  document.getElementById('chat-title').textContent = u.title;
+  document.getElementById('chat-sub').textContent = u.sub;
+  document.getElementById('status-text').textContent = u.status;
+  document.getElementById('nav-dashboard').textContent = u.nav_d;
+  document.getElementById('nav-portfolio').textContent = u.nav_p;
+  document.getElementById('nav-market').textContent = u.nav_m;
+  document.getElementById('nav-settings').textContent = u.nav_s;
+  document.getElementById('w-crypto').textContent = u.w_crypto;
+  document.getElementById('w-chart').textContent = u.w_chart + ' — ' + currentChartCoin;
+  document.getElementById('w-predict').textContent = u.w_predict;
+  document.getElementById('w-predict-desc').textContent = u.w_predict_desc;
+  document.getElementById('w-alert').textContent = u.w_alert;
+  document.getElementById('w-budget').textContent = u.w_budget;
+  document.getElementById('w-news').textContent = u.w_news;
+  document.getElementById('w-forex').textContent = u.w_forex;
+  document.getElementById('w-indices').textContent = u.w_indices;
+  renderCalendar();
+  document.getElementById('b-income').textContent = u.b_income;
+  document.getElementById('b-housing').textContent = u.b_housing;
+  document.getElementById('b-food-l').textContent = u.b_food;
+  document.getElementById('b-other').textContent = u.b_other;
+  document.getElementById('add-alert-btn').textContent = u.add_alert;
+  document.getElementById('above-txt').textContent = u.above;
+  document.getElementById('below-txt').textContent = u.below;
+  document.getElementById('pred-btn-text').textContent = u.predict;
+  document.getElementById('ub-label').textContent = u.ub_label;
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.getElementById('theme-label').textContent = isDark ? u.theme_d : u.theme_l;
+  document.getElementById('voiceToggle').textContent = voiceReplyOn ? u.voice_on : u.voice_off;
+  document.getElementById('messages').innerHTML = '';
+  chatMessages = [];
+  addMsg('bot', u.welcome);
+  renderChips();
+  loadNews();
+}
+
+/* ========== THEME ========== */
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('theme-label').textContent = isDark ? i18n[lang].theme_l : i18n[lang].theme_d;
+  if (priceChart) updateChartColors();
+}
+function updateChartColors() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const gc = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.06)';
+  const tc = isDark ? '#6b7a99' : '#94a3b8';
+  priceChart.options.scales.x.ticks.color = tc;
+  priceChart.options.scales.y.ticks.color = tc;
+  priceChart.options.scales.x.grid.color = gc;
+  priceChart.options.scales.y.grid.color = gc;
+  priceChart.update();
+}
+
+/* ========== CHIPS ========== */
+function renderChips() {
+  const c = document.getElementById('quick-chips');
+  c.innerHTML = '';
+  (quickChips[lang] || quickChips.en).forEach(chip => {
+    const btn = document.createElement('button');
+    btn.className = 'chip';
+    btn.textContent = chip;
+    btn.onclick = () => {
+      document.getElementById('userInput').value = chip.replace(/^[\p{Emoji}\s]+/u,'').trim();
+      c.style.display = 'none';
+      sendMessage();
+    };
+    c.appendChild(btn);
+  });
+}
+
+/* ========== DOCUMENT ACTION CHIPS ========== */
+function showDocActions() {
+  const u = i18n[lang];
+  const bar = document.getElementById('doc-actions');
+  bar.innerHTML = '';
+  bar.style.display = 'flex';
+  const actions = [
+    { label: u.doc_analyze, prompt: { uk:'Детально проаналізуй цей документ з фінансової точки зору', en:'Analyze this document in detail from a financial perspective', no:'Analyser dette dokumentet i detalj fra et finansielt perspektiv' }[lang] },
+    { label: u.doc_estimate, prompt: { uk:'Склади детальний кошторис на основі цього документу', en:'Build a detailed cost estimate based on this document', no:'Lag et detaljert kostnadsoverslag basert på dette dokumentet' }[lang] },
+    { label: u.doc_check, prompt: { uk:'Перевір всі розрахунки і числа в документі на помилки', en:'Check all calculations and numbers in the document for errors', no:'Sjekk alle beregninger og tall i dokumentet for feil' }[lang] },
+    { label: u.doc_advice, prompt: { uk:'Дай конкретні фінансові поради по цьому документу', en:'Give specific financial advice based on this document', no:'Gi konkrete finansielle råd basert på dette dokumentet' }[lang] },
+    { label: u.doc_extract, prompt: { uk:'Витягни всі числа, суми та відсотки з документу в таблицю', en:'Extract all numbers, amounts and percentages from the document into a table', no:'Trekk ut alle tall, beløp og prosenter fra dokumentet i en tabell' }[lang] },
+  ];
+  actions.forEach(a => {
+    const btn = document.createElement('button');
+    btn.className = 'doc-chip';
+    btn.textContent = a.label;
+    btn.onclick = () => {
+      document.getElementById('userInput').value = a.prompt;
+      bar.style.display = 'none';
+      sendMessage();
+    };
+    bar.appendChild(btn);
+  });
+}
+
+function hideDocActions() {
+  document.getElementById('doc-actions').style.display = 'none';
+}
+
+/* ========== FILE UPLOAD ========== */
+function handleFiles(files) {
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const b64 = e.target.result.split(',')[1];
+      const isImg = file.type.startsWith('image/');
+      pendingFiles.push({ name:file.name, type:file.type, b64, isImg, preview: isImg ? e.target.result : null });
+      renderUploadBar();
+      showDocActions();
+    };
+    reader.readAsDataURL(file);
+  });
+  document.getElementById('fileInput').value = '';
+}
+
+function renderUploadBar() {
+  const bar = document.getElementById('upload-bar');
+  const chips = document.getElementById('upload-chips');
+  chips.innerHTML = '';
+  if (pendingFiles.length === 0) { bar.classList.remove('active'); return; }
+  bar.classList.add('active');
+  pendingFiles.forEach((f, i) => {
+    const div = document.createElement('div');
+    div.className = 'upload-chip';
+    div.innerHTML = `${f.isImg ? '🖼️' : '📄'} <span style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.name}</span><button class="rm" onclick="removeFile(${i})">✕</button>`;
+    chips.appendChild(div);
+  });
+}
+
+function removeFile(i) {
+  pendingFiles.splice(i, 1);
+  renderUploadBar();
+  if (pendingFiles.length === 0) hideDocActions();
+}
+
+const chatSec = document.getElementById('chat-section');
+chatSec.addEventListener('dragover', e => { e.preventDefault(); chatSec.classList.add('drag-over'); });
+chatSec.addEventListener('dragleave', () => chatSec.classList.remove('drag-over'));
+chatSec.addEventListener('drop', e => { e.preventDefault(); chatSec.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
+
+/* ========== CHAT ========== */
+function addMsg(role, text, isTyping = false) {
+  const container = document.getElementById('messages');
+  const div = document.createElement('div');
+  if (isTyping) {
+    div.className = 'typing-indicator';
+    for (let i = 0; i < 3; i++) { const d = document.createElement('div'); d.className = 'typing-dot'; div.appendChild(d); }
+  } else {
+    div.className = `message ${role}`;
+    div.textContent = text;
+  }
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+  return div;
+}
+
+function addFileMsg(file) {
+  const container = document.getElementById('messages');
+  const wrap = document.createElement('div');
+  wrap.className = 'file-preview-msg';
+  const chip = document.createElement('div');
+  chip.className = 'file-chip';
+  chip.innerHTML = `${file.isImg ? '🖼️' : '📄'} ${file.name}`;
+  wrap.appendChild(chip);
+  if (file.isImg && file.preview) {
+    const img = document.createElement('img');
+    img.src = file.preview; img.className = 'img-preview';
+    wrap.appendChild(img);
+  }
+  container.appendChild(wrap);
+  container.scrollTop = container.scrollHeight;
+}
+
+/* ========== LOCAL FALLBACK ========== */
+function getLocalReply(txt) {
+  const r = {
+    uk: {
+      btc: "Bitcoin (BTC) — найбільша криптовалюта. Поточна ціна відображається на панелі справа (реальні дані CoinGecko). Інвестуйте обережно — ринок волатильний!",
+      eth: "Ethereum (ETH) — платформа для смарт-контрактів та DeFi. Ціна в реальному часі — дивіться панель справа.",
+      budget: "Правило 50/30/20: 50% на необхідне (житло, їжа), 30% на бажане, 20% на заощадження. Спробуйте наш калькулятор справа!",
+      save: "Поради: 1) Автоперекази 20% з зарплати, 2) Скасуйте зайві підписки, 3) Готуйте вдома. Маленькі суми дають великий результат через складний відсоток!",
+      invest: "Для початку: 1) Резервний фонд 3-6 місяців, 2) Погасіть дорогі борги, 3) ETF-індексні фонди — оптимальне співвідношення ризик/дохід.",
+      mortgage: "Іпотека — формула: M = P[r(1+r)^n]/[(1+r)^n-1]\nПриклад: 3 000 000 грн на 20 років під 15% = ~39 500 грн/міс\nВикористайте калькулятор вище!",
+      file: "Файл отримано! ⚠️ Для повного аналізу документів введіть API-ключ Anthropic у полі зліва. Після цього бот зможе читати PDF, перевіряти розрахунки та складати кошториси.",
+      greet: "Привіт! 👋 Я FinanceBot Pro з аналізом документів. Завантажте PDF або зображення рахунку/кошторису — я все перевірю та проаналізую!",
+      default: "Я фінансовий асистент! Можу допомогти з: Bitcoin та крипто, бюджетом та заощадженнями, інвестиціями, кредитами та іпотекою, аналізом документів та кошторисів."
+    },
+    en: {
+      btc: "Bitcoin (BTC) — largest crypto by market cap. Live price shown in the right panel (CoinGecko data). Invest carefully — market is highly volatile!",
+      eth: "Ethereum (ETH) — platform for smart contracts & DeFi. Real-time price in the right panel.",
+      budget: "50/30/20 rule: 50% needs, 30% wants, 20% savings. Try our budget calculator on the right!",
+      save: "Tips: 1) Auto-transfer 20% of salary, 2) Cancel unused subscriptions, 3) Cook at home. Compound interest turns small amounts into big sums!",
+      invest: "Start: 1) Emergency fund 3-6 months, 2) Pay off high-interest debt, 3) Index ETFs — best risk/return ratio.",
+      mortgage: "Mortgage formula: M = P[r(1+r)^n]/[(1+r)^n-1]\nExample: $300K over 30yr at 7% = ~$1,996/month",
+      file: "File received! ⚠️ For full document analysis, enter your Anthropic API key in the left panel. Then the bot can read PDFs, verify calculations, and build estimates.",
+      greet: "Hi! 👋 I'm FinanceBot Pro with document analysis. Upload a PDF or invoice image — I'll analyze everything!",
+      default: "I'm your financial assistant! I can help with: Bitcoin & crypto, budgeting & savings, investments, loans & mortgages, document analysis & estimates."
+    },
+    no: {
+      btc: "Bitcoin (BTC) — største krypto etter markedsverdi. Live-pris vises i panelet til høyre (CoinGecko-data). Invester forsiktig — markedet er volatilt!",
+      eth: "Ethereum (ETH) — plattform for smarte kontrakter og DeFi. Sanntidspris i panelet til høyre.",
+      budget: "50/30/20-regelen: 50% nødvendigheter, 30% ønsker, 20% sparing. Prøv vår budsjettalkulator til høyre!",
+      save: "Tips: 1) Autotransfer 20% av lønn, 2) Avbryt ubrukte abonnementer, 3) Lag mat hjemme. Renters rente gjør små beløp store!",
+      invest: "Start: 1) Nødfond 3-6 måneder, 2) Betal ned dyr gjeld, 3) Indeks-ETF — beste risiko/avkastning.",
+      mortgage: "Boliglån-formel: M = P[r(1+r)^n]/[(1+r)^n-1]\nEks: 3 000 000 kr over 25 år, 5% = ~17 500 kr/mnd",
+      file: "Fil mottatt! ⚠️ For full dokumentanalyse, skriv inn Anthropic API-nøkkel i panelet til venstre. Da kan boten lese PDF-er, sjekke beregninger og lage kostnadsoverslag.",
+      greet: "Hei! 👋 Jeg er FinanceBot Pro med dokumentanalyse. Last opp en PDF eller fakturabilde — jeg analyserer alt!",
+      default: "Jeg er din finansielle assistent! Kan hjelpe med: Bitcoin og krypto, budsjett og sparing, investeringer, lån og boliglån, dokumentanalyse og kostnadsoverslag."
+    }
+  };
+  const l = r[lang] || r.en;
+  function pick(x) { return Array.isArray(x) ? x[Math.floor(Math.random()*x.length)] : x; }
+  if (!txt) return pick(l.default);
+  if (txt.includes('image') || txt.includes('pdf') || txt.includes('файл') || txt.includes('fil') || txt.includes('document') || txt.includes('dokument')) return pick(l.file);
+  if (txt.includes('btc') || txt.includes('bitcoin') || txt.includes('біткоін')) return pick(l.btc);
+  if (txt.includes('eth') || txt.includes('ethereum')) return pick(l.eth);
+  if (txt.includes('mortgage') || txt.includes('іпотек') || txt.includes('boliglån') || txt.includes('кредит') || txt.includes('lån')) return pick(l.mortgage);
+  if (txt.includes('budget') || txt.includes('бюджет') || txt.includes('budsjett')) return pick(l.budget);
+  if (txt.includes('save') || txt.includes('заощад') || txt.includes('spar')) return pick(l.save);
+  if (txt.includes('invest')) return pick(l.invest);
+  if (txt.includes('hello') || txt.includes('hi') || txt.includes('привіт') || txt.includes('hei')) return pick(l.greet);
+  return pick(l.default);
+}
+
+/* ========== SEND MESSAGE ========== */
+async function sendMessage() {
+  const input = document.getElementById('userInput');
+  const text = input.value.trim();
+  if (!text && pendingFiles.length === 0) return;
+  input.value = '';
+  document.getElementById('quick-chips').style.display = 'none';
+  hideDocActions();
+
+  const filesToSend = [...pendingFiles];
+  pendingFiles = [];
+  renderUploadBar();
+  filesToSend.forEach(f => addFileMsg(f));
+  if (text) addMsg('user', text);
+
+  // Build content for API
+  const userContent = [];
+  filesToSend.forEach(f => {
+    if (f.isImg) {
+      userContent.push({ type:'image', source:{ type:'base64', media_type:f.type, data:f.b64 }});
+    } else {
+      userContent.push({ type:'document', source:{ type:'base64', media_type:'application/pdf', data:f.b64 }});
+    }
+  });
+
+  const defaultPrompts = {
+    uk:'Детально проаналізуй цей файл: перевір всі числа та розрахунки, виявляй помилки, дай конкретні фінансові поради.',
+    en:'Analyze this file in detail: check all numbers and calculations, identify errors, give specific financial advice.',
+    no:'Analyser denne filen i detalj: sjekk alle tall og beregninger, identifiser feil, gi konkrete finansielle råd.'
+  };
+  const textToSend = text || defaultPrompts[lang] || defaultPrompts.en;
+  userContent.push({ type:'text', text: textToSend });
+  const apiContent = userContent.length === 1 ? userContent[0].text : userContent;
+  chatMessages.push({ role:'user', content: apiContent });
+
+  const typing = addMsg('bot', '', true);
+
+  if (!apiKey) {
+    setTimeout(() => {
+      typing.remove();
+      const u = i18n[lang];
+      const reply = (filesToSend.length > 0 ? u.no_key_msg + '\n\n' : '') + getLocalReply(textToSend.toLowerCase());
+      addMsg('bot', reply);
+      chatMessages.push({ role:'assistant', content: reply });
+      if (voiceReplyOn) speakText(reply);
+    }, 800);
+    return;
+  }
+
+  try {
+    // Build Gemini contents array from chatMessages
+    const geminiContents = [];
+    // Add system as first user turn
+    geminiContents.push({ role:'user', parts:[{ text: SYSTEM[lang] || SYSTEM.en }] });
+    geminiContents.push({ role:'model', parts:[{ text:'Understood. I am ready to help.' }] });
+
+    chatMessages.forEach(m => {
+      if (m.role === 'user') {
+        const parts = [];
+        if (Array.isArray(m.content)) {
+          m.content.forEach(c => {
+            if (c.type === 'text') parts.push({ text: c.text });
+            else if (c.type === 'image') parts.push({ inline_data:{ mime_type: c.source.media_type, data: c.source.data }});
+            else if (c.type === 'document') parts.push({ inline_data:{ mime_type: 'application/pdf', data: c.source.data }});
+          });
+        } else {
+          parts.push({ text: m.content });
+        }
+        geminiContents.push({ role:'user', parts });
+      } else {
+        geminiContents.push({ role:'model', parts:[{ text: m.content }] });
+      }
+    });
+
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: geminiContents, generationConfig:{ maxOutputTokens:1500, temperature:0.7 } })
+      }
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({}));
+      throw new Error(err.error?.message || 'API error ' + res.status);
+    }
+    const data = await res.json();
+    typing.remove();
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || getLocalReply('');
+    addMsg('bot', reply);
+    chatMessages.push({ role:'assistant', content: reply });
+    if (voiceReplyOn) speakText(reply);
+  } catch(err) {
+    typing.remove();
+    console.error('Gemini API error:', err.message);
+    const isAuthErr = err.message && (err.message.includes('400') || err.message.includes('401') || err.message.includes('API_KEY') || err.message.includes('key'));
+    if (isAuthErr) {
+      addMsg('bot', '❌ ' + { uk:'Невірний Google API-ключ. Перевірте ключ у налаштуваннях зліва.', en:'Invalid Google API key. Check the key in the left panel.', no:'Ugyldig Google API-nøkkel. Sjekk nøkkelen i panelet til venstre.' }[lang]);
+    } else {
+      const reply = getLocalReply(typeof chatMessages[chatMessages.length-1]?.content === 'string' ? chatMessages[chatMessages.length-1].content.toLowerCase() : '');
+      addMsg('bot', reply);
+      chatMessages.push({ role:'assistant', content: reply });
+      if (voiceReplyOn) speakText(reply);
+    }
+  }
+}
+
+/* ========== VOICE INPUT ========== */
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.onresult = e => { document.getElementById('userInput').value = e.results[0][0].transcript; stopMic(); sendMessage(); };
+  recognition.onend = stopMic;
+} else { document.getElementById('mic').style.display = 'none'; }
+
+function toggleMic() {
+  if (isSpeaking) { window.speechSynthesis.cancel(); isSpeaking = false; updateMicBtn(); return; }
+  if (isRecording) { stopMic(); return; }
+  isRecording = true;
+  recognition.lang = lang==='uk'?'uk-UA':lang==='no'?'nb-NO':'en-US';
+  recognition.start();
+  document.getElementById('mic').classList.add('recording');
+}
+function stopMic() {
+  isRecording = false;
+  if (recognition) try { recognition.stop(); } catch{}
+  updateMicBtn();
+}
+function updateMicBtn() {
+  const btn = document.getElementById('mic');
+  btn.classList.remove('recording','speaking');
+  if (isSpeaking) btn.classList.add('speaking');
+}
+
+/* ========== VOICE OUTPUT ========== */
+function toggleVoiceReply() {
+  voiceReplyOn = !voiceReplyOn;
+  const btn = document.getElementById('voiceToggle');
+  const u = i18n[lang];
+  btn.textContent = voiceReplyOn ? u.voice_on : u.voice_off;
+  btn.classList.toggle('on', voiceReplyOn);
+  if (!voiceReplyOn && isSpeaking) { window.speechSynthesis.cancel(); isSpeaking = false; updateMicBtn(); }
+  showToast(voiceReplyOn ? '🔊 ON' : '🔇 OFF');
+}
+function speakText(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text.slice(0, 500));
+  utter.lang = lang==='uk'?'uk-UA':lang==='no'?'nb-NO':'en-US';
+  utter.rate = 1.0;
+  isSpeaking = true; updateMicBtn();
+  utter.onend = () => { isSpeaking = false; updateMicBtn(); };
+  utter.onerror = () => { isSpeaking = false; updateMicBtn(); };
+  window.speechSynthesis.speak(utter);
+}
+
+/* ========== EXPORT PDF ========== */
+function exportPDF() {
+  if (chatMessages.length === 0) { showToast(i18n[lang].export_empty); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFont('helvetica');
+  doc.setFontSize(16); doc.text('FinanceBot Pro — Chat Export', 14, 18);
+  doc.setFontSize(10); doc.setTextColor(130); doc.text(new Date().toLocaleString(), 14, 26);
+  doc.setTextColor(0); let y = 36;
+  chatMessages.forEach(m => {
+    const role = m.role === 'user' ? '👤 You' : '🤖 Bot';
+    const content = typeof m.content === 'string' ? m.content : (m.content.find(c=>c.type==='text')?.text || '[file]');
+    doc.setFontSize(9); doc.setTextColor(m.role === 'user' ? 30 : 80);
+    const lines = doc.splitTextToSize(`${role}: ${content}`, 180);
+    if (y + lines.length * 5 > 280) { doc.addPage(); y = 20; }
+    doc.text(lines, 14, y); y += lines.length * 5 + 4;
+  });
+  doc.save('financebot-chat.pdf');
+}
+
+/* ========== PREDICTION ========== */
+function getPrediction() {
+  const u = i18n[lang];
+  document.getElementById('pred-btn-text').textContent = u.predicting;
+  document.getElementById('pred-btn').disabled = true;
+  setTimeout(() => {
+    const val = (Math.random() * 7 + 0.5).toFixed(1);
+    const isUp = Math.random() > 0.38;
+    const res = document.getElementById('prediction-result');
+    const v = document.getElementById('pred-value');
+    document.getElementById('pred-label').textContent = u.pred_done;
+    res.style.display = 'block';
+    v.textContent = `${isUp ? u.bullish + ' +' : u.bearish + ' -'}${val}%`;
+    v.style.color = isUp ? 'var(--success)' : 'var(--danger)';
+    document.getElementById('pred-btn-text').textContent = u.predict;
+    document.getElementById('pred-btn').disabled = false;
+  }, 1800);
+}
+
+/* ========== CHART ========== */
+function initChart() {
+  const ctx = document.getElementById('priceChart').getContext('2d');
+  const grad = ctx.createLinearGradient(0,0,0,120);
+  grad.addColorStop(0, 'rgba(59,130,246,0.25)');
+  grad.addColorStop(1, 'rgba(59,130,246,0)');
+  priceChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: Array(20).fill(''), datasets: [{ data: Array(20).fill(null), borderColor:'#3b82f6', borderWidth:2, backgroundColor:grad, fill:true, tension:0.4, pointRadius:0 }]},
+    options: {
+      responsive:true, maintainAspectRatio:false, animation:false,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#6b7a99', maxTicksLimit:5}, border:{display:false} },
+        y:{ grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#6b7a99', maxTicksLimit:4, callback:v=>'$'+Math.round(v).toLocaleString()}, border:{display:false} }
+      }
+    }
+  });
+}
+
+function showChart(coin) {
+  currentChartCoin = coin;
+  const colors = { BTC:'#f59e0b', ETH:'#627eea', SOL:'#9945ff', BNB:'#f3ba2f', XRP:'#00aae4' };
+  document.getElementById('w-chart').textContent = i18n[lang].w_chart + ' — ' + coin;
+  if (chartHistory[coin].length > 1) {
+    priceChart.data.datasets[0].borderColor = colors[coin];
+    priceChart.data.datasets[0].data = [...chartHistory[coin]];
+    priceChart.update();
+  }
+}
+
+/* ========== ALERTS ========== */
+function addAlert() {
+  const coin = document.getElementById('alert-coin').value;
+  const dir = document.getElementById('alert-dir').value;
+  const price = parseFloat(document.getElementById('alert-price').value);
+  if (!price || isNaN(price)) return;
+  alerts.push({ coin, dir, price, id: Date.now() });
+  document.getElementById('alert-price').value = '';
+  renderAlerts();
+}
+function renderAlerts() {
+  const list = document.getElementById('alerts-list');
+  list.innerHTML = '';
+  const u = i18n[lang];
+  alerts.forEach(a => {
+    const div = document.createElement('div');
+    div.className = 'alert-item';
+    div.innerHTML = `<span style="font-weight:700;color:var(--accent)">${a.coin}</span>&nbsp;${a.dir==='above'?u.above:u.below}&nbsp;<span style="font-family:'DM Mono',monospace">$${a.price.toLocaleString()}</span><button class="del-btn" onclick="deleteAlert(${a.id})">✕</button>`;
+    list.appendChild(div);
+  });
+}
+function deleteAlert(id) { alerts = alerts.filter(a => a.id !== id); renderAlerts(); }
+const notified = new Set();
+function checkAlerts(coin, price) {
+  alerts.forEach(a => {
+    if (a.coin !== coin) return;
+    const key = `${a.id}`;
+    const triggered = a.dir === 'above' ? price >= a.price : price <= a.price;
+    if (triggered && !notified.has(key)) { notified.add(key); showToast(`🔔 ${coin} ${a.dir==='above'?'≥':'≤'} $${a.price.toLocaleString()}`); }
+    if (!triggered) notified.delete(key);
+  });
+}
+
+/* ========== TOAST ========== */
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 4000);
+}
+
+/* ========== BUDGET ========== */
+function calcBudget() {
+  const inc = parseFloat(document.getElementById('b-inc').value) || 0;
+  const house = parseFloat(document.getElementById('b-house').value) || 0;
+  const food = parseFloat(document.getElementById('b-food').value) || 0;
+  const other = parseFloat(document.getElementById('b-other-inp').value) || 0;
+  if (!inc) { document.getElementById('budget-result').style.display = 'none'; return; }
+  const left = inc - house - food - other;
+  const res = document.getElementById('budget-result');
+  const u = i18n[lang];
+  res.style.display = 'block';
+  res.className = 'budget-result ' + (left >= 0 ? 'budget-ok' : 'budget-warn');
+  res.textContent = (left >= 0 ? u.budget_left : u.budget_over) + ' ' + Math.abs(left).toLocaleString(undefined,{minimumFractionDigits:0}) + ' kr';
+}
+
+/* ========== NEWS ========== */
+const newsData = {
+  en:[
+    {h:"Bitcoin holds above $90K as institutional demand rises",t:"Bloomberg · 1h ago"},
+    {h:"Fed minutes signal possible rate cut in 2025",t:"Reuters · 3h ago"},
+    {h:"Ethereum ETF sees record $500M weekly inflow",t:"CoinDesk · 5h ago"},
+    {h:"Norway's oil fund reports 8.7% annual return",t:"FT · 7h ago"},
+    {h:"Gold hits new ATH amid global uncertainty",t:"WSJ · 9h ago"}
+  ],
+  no:[
+    {h:"Bitcoin holder seg over $90 000 med økt institusjonell etterspørsel",t:"Bloomberg · 1t siden"},
+    {h:"Fed signaliserer mulig rentekutt i 2025",t:"Reuters · 3t siden"},
+    {h:"Ethereum ETF ser rekord $500M ukentlig innstrøm",t:"CoinDesk · 5t siden"},
+    {h:"Oljefondet melder 8,7% årsavkastning",t:"DN · 7t siden"},
+    {h:"Gull slår ny ATH midt i global usikkerhet",t:"E24 · 9t siden"}
+  ],
+  uk:[
+    {h:"Bitcoin тримається вище $90 000 завдяки інституційному попиту",t:"Bloomberg · 1г тому"},
+    {h:"ФРС сигналізує можливе зниження ставок у 2025",t:"Reuters · 3г тому"},
+    {h:"Ethereum ETF побив рекорд притоку $500 млн на тиждень",t:"CoinDesk · 5г тому"},
+    {h:"Норвезький нафтовий фонд повідомляє 8,7% річний дохід",t:"FT · 7г тому"},
+    {h:"Золото б'є новий ATH на тлі глобальної невизначеності",t:"WSJ · 9г тому"}
+  ]
+};
+function loadNews() {
+  const list = document.getElementById('news-list');
+  list.innerHTML = `<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:14px;" id="news-loading">${i18n[lang].news_load}</div>`;
+  setTimeout(() => {
+    const articles = newsData[lang] || newsData.en;
+    list.innerHTML = articles.map(a => `<div class="news-item"><div class="news-headline">${a.h}</div><div class="news-meta">${a.t}</div></div>`).join('');
+  }, 800);
+}
+
+/* ========== CALENDAR / CLOCK ========== */
+const dayNames = {
+  uk:['Неділя','Понеділок','Вівторок','Середа','Четвер','П\u2019ятниця','Субота'],
+  en:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
+  no:['Søndag','Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag']
+};
+const dayShort = { uk:['Нд','Пн','Вт','Ср','Чт','Пт','Сб'], en:['Su','Mo','Tu','We','Th','Fr','Sa'], no:['Sø','Ma','Ti','On','To','Fr','Lø'] };
+const monthNames = {
+  uk:['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'],
+  en:['January','February','March','April','May','June','July','August','September','October','November','December'],
+  no:['Januar','Februar','Mars','April','Mai','Juni','Juli','August','September','Oktober','November','Desember']
+};
+function getWeekNumber(d) {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay()||7));
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+  return Math.ceil((((date-yearStart)/86400000)+1)/7);
+}
+function renderCalendar() {
+  const now = new Date();
+  const mn = monthNames[lang]||monthNames.en;
+  const dn = dayNames[lang]||dayNames.en;
+  const ds = dayShort[lang]||dayShort.en;
+  const week = getWeekNumber(now);
+  const weekLabel = lang==='uk'? `Тиждень ${week}` : lang==='no'? `Uke ${week}` : `Week ${week}`;
+  document.getElementById('cal-date').textContent = `${now.getDate()} ${mn[now.getMonth()]} ${now.getFullYear()}`;
+  document.getElementById('cal-day').textContent = dn[now.getDay()];
+  document.getElementById('cal-week').textContent = weekLabel;
+  const strip = document.getElementById('week-strip');
+  strip.innerHTML = '';
+  const monday = new Date(now);
+  const diff = now.getDay()===0 ? -6 : 1 - now.getDay();
+  monday.setDate(now.getDate()+diff);
+  for (let i=0;i<7;i++) {
+    const day = new Date(monday);
+    day.setDate(monday.getDate()+i);
+    const isToday = day.toDateString()===now.toDateString();
+    const isPast = day < new Date(now.toDateString());
+    const cell = document.createElement('div');
+    cell.style.cssText = `flex:1;text-align:center;border-radius:8px;padding:5px 2px;font-size:10px;font-weight:700;
+      background:${isToday?"var(--accent)":isPast?"var(--card-bg2)":"transparent"};
+      color:${isToday?"#fff":isPast?"var(--text-dim)":"var(--text-mid)"};
+      border:1px solid ${isToday?"var(--accent)":"var(--border)"};`;
+    cell.innerHTML = `<div style="font-size:9px;margin-bottom:2px;">${ds[(monday.getDay()+i)%7]}</div><div>${day.getDate()}</div>`;
+    strip.appendChild(cell);
+  }
+}
+function updateClock() {
+  const now = new Date();
+  const el = document.getElementById('cal-time');
+  if (el) el.textContent = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+}
+
+/* ========== NAVIGATION ========== */
+let portfolioAssets = [];
+
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const pageEl = document.getElementById('page-' + page);
+  if (pageEl) pageEl.classList.add('active');
+  const navMap = { dashboard:0, portfolio:1, market:2, settings:3 };
+  const navItems = document.querySelectorAll('.nav-item');
+  if (navItems[navMap[page]]) navItems[navMap[page]].classList.add('active');
+
+  if (page === 'market') renderMarketPage();
+  if (page === 'portfolio') renderPortfolioPage();
+  if (page === 'settings') {
+    const s = document.getElementById('set-api-status');
+    if (s) s.textContent = apiKey ? '🟢 AI активен — Gemini' : '⚪ Offline — введіть ключ';
+  }
+}
+
+function renderMarketPage() {
+  // Crypto table
+  const cb = document.getElementById('mkt-crypto-body');
+  if (cb) {
+    const coins = [
+      { id:'BTC', name:'Bitcoin', icon:'₿', color:'#f59e0b' },
+      { id:'ETH', name:'Ethereum', icon:'Ξ', color:'#627eea' },
+      { id:'SOL', name:'Solana', icon:'◎', color:'#9945ff' },
+      { id:'BNB', name:'BNB', icon:'B', color:'#f3ba2f' },
+      { id:'XRP', name:'XRP', icon:'✕', color:'#00aae4' }
+    ];
+    cb.innerHTML = coins.map(c => {
+      const p = prices[c.id] || 0;
+      const el = document.getElementById('c-' + c.id.toLowerCase());
+      const chg = el ? el.textContent : '—';
+      const isUp = chg.includes('+');
+      return `<tr>
+        <td><span style="color:${c.color};font-weight:800;margin-right:6px;">${c.icon}</span>${c.name} <span style="color:var(--text-dim);font-size:11px;">${c.id}</span></td>
+        <td style="font-family:'DM Mono',monospace;">$${formatPrice(p)}</td>
+        <td style="color:${isUp?'var(--success)':'var(--danger)'};font-weight:700;">${chg}</td>
+      </tr>`;
+    }).join('');
+  }
+  // Indices table
+  const ib = document.getElementById('mkt-indices-body');
+  if (ib) {
+    ib.innerHTML = Object.entries(indicesData).map(([name, d]) => {
+      const pct = ((d.val - d.base) / d.base * 100).toFixed(2);
+      const isUp = parseFloat(pct) >= 0;
+      return `<tr>
+        <td>${d.icon} ${name}</td>
+        <td style="font-family:'DM Mono',monospace;">${d.val.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+        <td style="color:${isUp?'var(--success)':'var(--danger)'};font-weight:700;">${isUp?'+':''}${pct}%</td>
+      </tr>`;
+    }).join('');
+  }
+  // Forex table
+  const fb = document.getElementById('mkt-forex-body');
+  if (fb) {
+    fb.innerHTML = Object.entries(forexRates).map(([cur, rate]) => {
+      const pct = ((rate - forexBase[cur]) / forexBase[cur] * 100).toFixed(2);
+      const isUp = parseFloat(pct) >= 0;
+      return `<tr>
+        <td>${forexFlags[cur]} ${cur}/USD</td>
+        <td style="font-family:'DM Mono',monospace;">${rate.toFixed(cur==='JPY'?1:3)}</td>
+        <td style="color:${isUp?'var(--success)':'var(--danger)'};font-weight:700;">${isUp?'+':''}${pct}%</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+function addPortfolioAsset() {
+  const coin = prompt('Монета (BTC/ETH/SOL/BNB/XRP):','BTC');
+  if (!coin) return;
+  const amt = parseFloat(prompt('Количество:', '0.1'));
+  if (!amt || isNaN(amt)) return;
+  const buyPrice = parseFloat(prompt('Цена покупки ($):', prices[coin.toUpperCase()]||'0'));
+  portfolioAssets.push({ coin: coin.toUpperCase(), amount: amt, buyPrice: buyPrice||0 });
+  renderPortfolioPage();
+}
+
+function renderPortfolioPage() {
+  const grid = document.getElementById('portfolio-grid');
+  const totalEl = document.getElementById('port-total');
+  if (!grid) return;
+  if (portfolioAssets.length === 0) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-dim);font-size:14px;">Немає ейендел. Натисніть "+" щоб додати.</div>`;
+    if (totalEl) totalEl.textContent = '$ 0.00';
+    return;
+  }
+  let total = 0;
+  grid.innerHTML = portfolioAssets.map((a, i) => {
+    const cur = prices[a.coin] || 0;
+    const val = cur * a.amount;
+    const pnl = val - (a.buyPrice * a.amount);
+    const pnlPct = a.buyPrice ? ((cur - a.buyPrice) / a.buyPrice * 100).toFixed(2) : '0.00';
+    total += val;
+    return `<div class="p-asset">
+      <div class="p-asset-name">${a.coin} × ${a.amount}</div>
+      <div class="p-asset-val">$${val.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+      <div class="p-asset-sub" style="color:${pnl>=0?'var(--success)':'var(--danger)'};">P&L: ${pnl>=0?'+':''}$${pnl.toFixed(2)} (${pnlPct}%)</div>
+      <div class="p-asset-sub">Куплено: $${a.buyPrice} · Сейчас: $${formatPrice(cur)}</div>
+      <button onclick="portfolioAssets.splice(${i},1);renderPortfolioPage();" style="margin-top:8px;background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px;">✕ Удалить</button>
+    </div>`;
+  }).join('');
+  if (totalEl) totalEl.textContent = '$ ' + total.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function saveApiKeySettings() {
+  const val = document.getElementById('settings-api-input').value.trim();
+  if (val) {
+    apiKey = val;
+    sessionStorage.setItem('fb_api_key', val);
+    updateApiDot();
+    const s = document.getElementById('set-api-status');
+    if (s) s.textContent = '🟢 AI активен — Gemini';
+    document.getElementById('settings-api-input').value = '';
+    showToast('🔑 Ключ збережено! Gemini AI активен.');
+  }
+}
+
+/* ========== INIT ========== */
+setLandingLang('no');
+lucide.createIcons();
+</script>
+</body>
+</html>
